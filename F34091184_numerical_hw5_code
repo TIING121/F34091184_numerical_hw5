@@ -1,0 +1,107 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+print("\n--------------------第一題--------------------")
+def f(t, y):
+    return 1 + (y/t) + (y/t)**2
+
+def exact_solution_q1(t):
+    return t * np.tan(np.log(t))
+
+def df_dt(t, y):
+    term1 = (-y)/(t**2) + (-2)*(y**2)/(t**3)
+    term2 = (1/t) + (2*y)/(t**2)
+    return term1 + term2 * f(t, y)
+
+def solve_q1(h):
+    a, b = 1, 2
+    N = int((b - a)/h)
+    t = np.linspace(a, b, N+1)
+    y_euler = np.zeros(N+1)
+    y_taylor = np.zeros(N+1)
+    y_euler[0] = 0
+    y_taylor[0] = 0
+
+    for i in range(N):
+        y_euler[i+1] = y_euler[i] + h * f(t[i], y_euler[i])
+        y_taylor[i+1] = y_taylor[i] + h * f(t[i], y_taylor[i]) + (h**2)/2 * df_dt(t[i], y_taylor[i])
+
+    y_exact = exact_solution_q1(t)
+    euler_err = np.abs(y_exact - y_euler)
+    taylor_err = np.abs(y_exact - y_taylor)
+
+    table_a = pd.DataFrame({
+        't  | ': t, 'Euler  | ': y_euler, 'Exact y  | ': y_exact, 'Euler Err  | ': euler_err
+    })
+
+    table_b = pd.DataFrame({
+        't  | ': t, 'Taylor  | ': y_taylor, 'Exact y  | ': y_exact, 'Taylor Err  | ': taylor_err
+    })
+
+    return table_a, table_b
+
+table_a, table_b = solve_q1(0.1)
+
+print("\n==== Q1 (a) Euler Method ====\n")
+print(table_a.to_string(index=False, float_format="%.7f  | "))
+
+print("\n==== Q1 (b) Taylor 2nd Order ====\n")
+print(table_b.to_string(index=False, float_format="%.7f  | "))
+
+print("\n--------------------第二題--------------------")
+def f1(t, u1, u2):
+    return 9*u1 + 24*u2 + 5*np.cos(t) - (1/3)*np.sin(t)
+
+def f2(t, u1, u2):
+    return -24*u1 - 52*u2 - 9*np.cos(t) + (1/3)*np.sin(t)
+
+def u1_exact_q2(t):
+    return 2*np.exp(-3*t) - np.exp(-39*t) + (1/3)*np.cos(t)
+
+def u2_exact_q2(t):
+    return -np.exp(-3*t) + 2*np.exp(-39*t) - (1/3)*np.cos(t)
+
+def runge_kutta_q2(h):
+    a, b = 0, 1
+    N = int((b - a)/h)
+    t = np.linspace(a, b, N+1)
+    u1 = np.zeros(N+1)
+    u2 = np.zeros(N+1)
+    u1[0] = 4/3
+    u2[0] = 2/3
+
+    for i in range(N):
+        ti = t[i]
+        k1u1 = h * f1(ti, u1[i], u2[i])
+        k1u2 = h * f2(ti, u1[i], u2[i])
+        k2u1 = h * f1(ti + h/2, u1[i] + k1u1/2, u2[i] + k1u2/2)
+        k2u2 = h * f2(ti + h/2, u1[i] + k1u1/2, u2[i] + k1u2/2)
+        k3u1 = h * f1(ti + h/2, u1[i] + k2u1/2, u2[i] + k2u2/2)
+        k3u2 = h * f2(ti + h/2, u1[i] + k2u1/2, u2[i] + k2u2/2)
+        k4u1 = h * f1(ti + h, u1[i] + k3u1, u2[i] + k3u2)
+        k4u2 = h * f2(ti + h, u1[i] + k3u1, u2[i] + k3u2)
+        u1[i+1] = u1[i] + (k1u1 + 2*k2u1 + 2*k3u1 + k4u1)/6
+        u2[i+1] = u2[i] + (k1u2 + 2*k2u2 + 2*k3u2 + k4u2)/6
+
+    u1_exact = u1_exact_q2(t)
+    u2_exact = u2_exact_q2(t)
+    u1_err = np.abs(u1 - u1_exact)
+    u2_err = np.abs(u2 - u2_exact)
+
+    table_q2 = pd.DataFrame({
+        't  | ': t,
+        'u1(h)  | ': u1, 'u1(exact)  | ': u1_exact, 'u1 error  | ': u1_err,
+        'u2(h)  | ': u2, 'u2(exact)  | ': u2_exact, 'u2 error  | ': u2_err
+    })
+
+    return table_q2
+
+table_q2_h01 = runge_kutta_q2(0.1)
+table_q2_h005 = runge_kutta_q2(0.05)
+
+print("\n==== Q2 RK4 h = 0.1 ====\n")
+print(table_q2_h01.to_string(index=False, float_format="%.7f  | "))
+
+print("\n==== Q2 RK4 h = 0.05 ====\n")
+print(table_q2_h005.to_string(index=False, float_format="%.7f  | "))
